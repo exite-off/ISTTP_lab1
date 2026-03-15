@@ -23,28 +23,9 @@
 - [Use Case діаграма](img/use-case.png)
 - [ER-діаграма (модель даних)](img/ER.png)
 
-## Структура рішення
-
-```
-src/
-  MVC/
-    InventoryMVC.Domain/   ← класи сутностей предметної області
-      Entities/
-        Entity.cs
-        IAggregateRoot.cs
-        Department.cs
-        ResponsiblePerson.cs
-        Category.cs
-        Vendor.cs
-        Room.cs
-        InventoryItem.cs
-        InventoryLog.cs
-docs/                      ← документація
-img/                       ← діаграми
-```
-
 ## Технології
 
 - .NET 9, C#
-- ASP.NET Core MVC (заплановано)
-- Entity Framework Core (заплановано)
+- ASP.NET Core MVC
+- Entity Framework Core + Npgsql (PostgreSQL)
+- Docker

@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/MVC/">
     <Project Path="InventoryMVC.Domain\InventoryMVC.Domain.csproj" />
+    <Project Path="InventoryMVC.Infrastructure\InventoryMVC.Infrastructure.csproj" />
+    <Project Path="InventoryMVC.WebMVC\InventoryMVC.WebMVC.csproj" />
   </Folder>
 </Solution>
