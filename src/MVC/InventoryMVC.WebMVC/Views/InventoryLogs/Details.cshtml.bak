@@ -1,0 +1,21 @@
+@model InventoryLog
+@{ ViewData["Title"] = "Log Entry"; }
+
+<h2>Log Entry #@Model.Id</h2>
+<dl class="row mb-4">
+    <dt class="col-sm-4">Date</dt><dd class="col-sm-8">@Model.ActionDate.ToString("G")</dd>
+    <dt class="col-sm-4">Action</dt><dd class="col-sm-8"><span class="badge bg-secondary">@Model.ActionType</span></dd>
+    <dt class="col-sm-4">Item</dt>
+    <dd class="col-sm-8">
+        @if (Model.InventoryItem != null)
+        {
+            <a asp-controller="InventoryItems" asp-action="Details" asp-route-id="@Model.InventoryItemId">
+                #@Model.InventoryItem.InventoryNumber — @Model.InventoryItem.Name
+            </a>
+        }
+    </dd>
+    <dt class="col-sm-4">Old Responsible</dt><dd class="col-sm-8">@(Model.OldResponsiblePerson?.FullName ?? "—")</dd>
+    <dt class="col-sm-4">New Responsible</dt><dd class="col-sm-8">@(Model.NewResponsiblePerson?.FullName ?? "—")</dd>
+    <dt class="col-sm-4">Notes</dt><dd class="col-sm-8">@(Model.Description ?? "—")</dd>
+</dl>
+<a asp-action="Index" class="btn btn-secondary">Back to Log</a>

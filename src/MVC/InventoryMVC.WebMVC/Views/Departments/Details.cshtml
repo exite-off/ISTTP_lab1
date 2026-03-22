@@ -1,0 +1,47 @@
+@model Department
+@{ ViewData["Title"] = Model.Name; }
+
+<h2>@Model.Name</h2>
+<dl class="row mb-4">
+    <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@Model.Address</dd>
+    <dt class="col-sm-3">Phone</dt><dd class="col-sm-9">@Model.Phone</dd>
+</dl>
+<div class="d-flex gap-2 mb-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Responsible Persons (@Model.ResponsiblePersons.Count)</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Name</th><th>Position</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.ResponsiblePersons)
+                {
+                    <tr>
+                        <td>@p.FullName</td>
+                        <td>@p.Position</td>
+                        <td><a asp-controller="ResponsiblePersons" asp-action="Details" asp-route-id="@p.Id">Details</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h5>Rooms (@Model.Rooms.Count)</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Room</th><th>Floor</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Rooms)
+                {
+                    <tr>
+                        <td>@r.Number</td>
+                        <td>@r.Floor</td>
+                        <td><a asp-controller="Rooms" asp-action="Details" asp-route-id="@r.Id">Details</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

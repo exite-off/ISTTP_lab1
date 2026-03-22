@@ -1,0 +1,29 @@
+@model IEnumerable<Vendor>
+@{ ViewData["Title"] = "Vendors"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Vendors</h2>
+    <a asp-action="Create" class="btn btn-dark">+ Vendor</a>
+</div>
+
+<table class="table table-hover">
+    <thead class="table-light">
+        <tr><th>Name</th><th>Contact Phone</th><th>Email</th><th>Address</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var v in Model)
+        {
+            <tr>
+                <td>@v.Name</td>
+                <td>@v.ContactPhone</td>
+                <td>@v.Email</td>
+                <td>@v.Address</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@v.Id" class="btn btn-sm btn-outline-info">Details</a>
+                    <a asp-action="Edit" asp-route-id="@v.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@v.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

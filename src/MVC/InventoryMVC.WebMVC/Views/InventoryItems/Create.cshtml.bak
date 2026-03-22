@@ -1,0 +1,68 @@
+@model InventoryItem
+@{ ViewData["Title"] = "New Item"; }
+
+<h2>New Inventory Item</h2>
+<div class="col-md-6">
+    <form asp-action="Create">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+        <div class="row mb-3">
+            <div class="col">
+                <label asp-for="InventoryNumber" class="form-label"></label>
+                <input asp-for="InventoryNumber" class="form-control" />
+                <span asp-validation-for="InventoryNumber" class="text-danger"></span>
+            </div>
+            <div class="col">
+                <label asp-for="Status" class="form-label"></label>
+                <select asp-for="Status" asp-items="ViewBag.Statuses" class="form-select">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <label asp-for="EntryDate" class="form-label"></label>
+                <input asp-for="EntryDate" class="form-control" />
+            </div>
+            <div class="col">
+                <label asp-for="WarrantyEndDate" class="form-label"></label>
+                <input asp-for="WarrantyEndDate" class="form-control" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Price" class="form-label"></label>
+            <input asp-for="Price" class="form-control" />
+            <span asp-validation-for="Price" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="CategoryId" class="form-label"></label>
+            <select asp-for="CategoryId" asp-items="ViewBag.CategoryId" class="form-select">
+                <option value="">-- Select Category --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="VendorId" class="form-label"></label>
+            <select asp-for="VendorId" asp-items="ViewBag.VendorId" class="form-select">
+                <option value="">-- Select Vendor --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="RoomId" class="form-label"></label>
+            <select asp-for="RoomId" asp-items="ViewBag.RoomId" class="form-select">
+                <option value="">-- Select Room --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="ResponsiblePersonId" class="form-label"></label>
+            <select asp-for="ResponsiblePersonId" asp-items="ViewBag.ResponsiblePersonId" class="form-select">
+                <option value="">-- Select Person --</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

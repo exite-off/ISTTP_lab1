@@ -1,0 +1,33 @@
+@model Room
+@{ ViewData["Title"] = $"Room {Model.Number}"; }
+
+<h2>Room @Model.Number</h2>
+<dl class="row mb-4">
+    <dt class="col-sm-3">Floor</dt><dd class="col-sm-9">@Model.Floor</dd>
+    <dt class="col-sm-3">Department</dt><dd class="col-sm-9">@Model.Department?.Name</dd>
+</dl>
+<div class="d-flex gap-2 mb-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>
+
+<h5>Items in this room (@Model.InventoryItems.Count)</h5>
+@if (Model.InventoryItems.Any())
+{
+    <table class="table table-sm">
+        <thead><tr><th>Inv #</th><th>Name</th><th>Status</th><th>Responsible</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var item in Model.InventoryItems)
+            {
+                <tr>
+                    <td>@item.InventoryNumber</td>
+                    <td>@item.Name</td>
+                    <td><span class="badge bg-info text-dark">@item.Status</span></td>
+                    <td>@item.ResponsiblePerson?.FullName</td>
+                    <td><a asp-controller="InventoryItems" asp-action="Details" asp-route-id="@item.Id">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else { <p class="text-muted">No items in this room.</p> }

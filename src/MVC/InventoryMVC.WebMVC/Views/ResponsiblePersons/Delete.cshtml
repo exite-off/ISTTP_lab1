@@ -1,0 +1,15 @@
+@model ResponsiblePerson
+@{ ViewData["Title"] = "Delete Person"; }
+
+<h2 class="text-danger">Delete Person</h2>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<p>Are you sure you want to delete <strong>@Model.FullName</strong>?</p>
+<dl class="row">
+    <dt class="col-sm-3">Position</dt><dd class="col-sm-9">@Model.Position</dd>
+    <dt class="col-sm-3">Department</dt><dd class="col-sm-9">@Model.Department?.Name</dd>
+</dl>
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Yes, delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

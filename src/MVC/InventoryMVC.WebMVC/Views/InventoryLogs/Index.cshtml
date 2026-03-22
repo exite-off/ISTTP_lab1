@@ -1,0 +1,32 @@
+@model IEnumerable<InventoryLog>
+@{ ViewData["Title"] = "Change Log"; }
+
+<h2>Change Log</h2>
+<p class="text-muted">Automatically updated when a responsible person is reassigned.</p>
+
+<table class="table table-hover">
+    <thead class="table-light">
+        <tr><th>Date</th><th>Action</th><th>Item</th><th>Old Responsible</th><th>New Responsible</th><th>Notes</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model)
+        {
+            <tr>
+                <td>@log.ActionDate.ToString("g")</td>
+                <td><span class="badge bg-secondary">@log.ActionType</span></td>
+                <td>
+                    @if (log.InventoryItem != null)
+                    {
+                        <a asp-controller="InventoryItems" asp-action="Details" asp-route-id="@log.InventoryItemId">
+                            #@log.InventoryItem.InventoryNumber @log.InventoryItem.Name
+                        </a>
+                    }
+                </td>
+                <td>@log.OldResponsiblePerson?.FullName</td>
+                <td>@log.NewResponsiblePerson?.FullName</td>
+                <td>@log.Description</td>
+                <td><a asp-action="Details" asp-route-id="@log.Id" class="btn btn-sm btn-outline-info">Details</a></td>
+            </tr>
+        }
+    </tbody>
+</table>

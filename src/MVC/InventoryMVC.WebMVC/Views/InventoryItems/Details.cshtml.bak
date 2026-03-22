@@ -1,0 +1,53 @@
+@model InventoryItem
+@{ ViewData["Title"] = Model.Name; }
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <h2>@Model.Name <small class="text-muted fs-5">#@Model.InventoryNumber</small></h2>
+    <span class="badge bg-info text-dark fs-6">@Model.Status</span>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <dl class="row">
+            <dt class="col-sm-5">Category</dt><dd class="col-sm-7">@Model.Category?.Name</dd>
+            <dt class="col-sm-5">Vendor</dt><dd class="col-sm-7">@Model.Vendor?.Name</dd>
+            <dt class="col-sm-5">Price</dt><dd class="col-sm-7">@Model.Price.ToString("C")</dd>
+            <dt class="col-sm-5">Entry Date</dt><dd class="col-sm-7">@Model.EntryDate.ToShortDateString()</dd>
+            <dt class="col-sm-5">Warranty Ends</dt><dd class="col-sm-7">@(Model.WarrantyEndDate?.ToShortDateString() ?? "—")</dd>
+        </dl>
+    </div>
+    <div class="col-md-6">
+        <dl class="row">
+            <dt class="col-sm-5">Room</dt><dd class="col-sm-7">Room @Model.Room?.Number, Floor @Model.Room?.Floor</dd>
+            <dt class="col-sm-5">Department</dt><dd class="col-sm-7">@Model.Room?.Department?.Name</dd>
+            <dt class="col-sm-5">Responsible</dt><dd class="col-sm-7">@Model.ResponsiblePerson?.FullName</dd>
+            <dt class="col-sm-5">Position</dt><dd class="col-sm-7">@Model.ResponsiblePerson?.Position</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="d-flex gap-2 mb-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>
+
+<h5>Change Log (@Model.Logs.Count)</h5>
+@if (Model.Logs.Any())
+{
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Date</th><th>Action</th><th>Old Responsible</th><th>New Responsible</th><th>Notes</th></tr></thead>
+        <tbody>
+            @foreach (var log in Model.Logs.OrderByDescending(l => l.ActionDate))
+            {
+                <tr>
+                    <td>@log.ActionDate.ToString("g")</td>
+                    <td><span class="badge bg-secondary">@log.ActionType</span></td>
+                    <td>@log.OldResponsiblePerson?.FullName</td>
+                    <td>@log.NewResponsiblePerson?.FullName</td>
+                    <td>@log.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else { <p class="text-muted">No changes recorded yet.</p> }
