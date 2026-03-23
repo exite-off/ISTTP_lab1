@@ -16,6 +16,7 @@ internal class InventoryItemConfiguration : IEntityTypeConfiguration<InventoryIt
         builder.Property(i => i.Name).IsRequired().HasMaxLength(200);
         builder.Property(i => i.EntryDate).IsRequired();
         builder.Property(i => i.Price).IsRequired().HasPrecision(18, 2);
+        builder.Property(i => i.Currency).IsRequired().HasMaxLength(10).HasDefaultValue("UAH");
         builder.Property(i => i.Status).IsRequired().HasMaxLength(50);
 
         builder.HasOne(i => i.Category)

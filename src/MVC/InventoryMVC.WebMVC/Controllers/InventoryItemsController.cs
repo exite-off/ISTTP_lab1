@@ -1,8 +1,10 @@
+using System.Text.Json;
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
@@ -11,6 +13,7 @@ public class InventoryItemsController : Controller
     private readonly InventoryContext _context;
 
     private static readonly string[] Statuses = ["Active", "Under Repair", "Written Off", "In Storage"];
+    private static readonly string[] Currencies = ["UAH", "USD", "EUR", "GBP", "PLN"];
 
     public InventoryItemsController(InventoryContext context) => _context = context;
 
@@ -45,12 +48,45 @@ public class InventoryItemsController : Controller
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
+        [Bind("InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Currency,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
         InventoryItem item)
     {
         if (!ModelState.IsValid) { PopulateDropdowns(); return View(item); }
-        _context.Add(item);
-        await _context.SaveChangesAsync();
+
+        if (!await DepartmentsMatch(item.RoomId, item.ResponsiblePersonId))
+        {
+            ModelState.AddModelError(nameof(item.ResponsiblePersonId),
+                "The responsible person must belong to the same department as the selected room.");
+            PopulateDropdowns();
+            return View(item);
+        }
+
+        try
+        {
+            _context.Add(item);
+            await _context.SaveChangesAsync();
+
+            // Log the initial registration / first assignment
+            _context.InventoryLogs.Add(new InventoryLog
+            {
+                ActionDate = DateTime.Now,
+                ActionType = "Registration",
+                Description = "Item registered and assigned to responsible person",
+                InventoryItemId = item.Id,
+                OldResponsiblePersonId = null,
+                NewResponsiblePersonId = item.ResponsiblePersonId
+            });
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException pg && pg.SqlState == "23505")
+        {
+            ModelState.AddModelError(nameof(item.InventoryNumber),
+                $"Inventory number {item.InventoryNumber} is already in use. Please choose a different number.");
+            PopulateDropdowns();
+            return View(item);
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
@@ -65,11 +101,19 @@ public class InventoryItemsController : Controller
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id,
-        [Bind("Id,InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
+        [Bind("Id,InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Currency,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
         InventoryItem item)
     {
         if (id != item.Id) return NotFound();
         if (!ModelState.IsValid) { PopulateDropdowns(item); return View(item); }
+
+        if (!await DepartmentsMatch(item.RoomId, item.ResponsiblePersonId))
+        {
+            ModelState.AddModelError(nameof(item.ResponsiblePersonId),
+                "The responsible person must belong to the same department as the selected room.");
+            PopulateDropdowns(item);
+            return View(item);
+        }
 
         var existing = await _context.InventoryItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
         if (existing == null) return NotFound();
@@ -88,8 +132,20 @@ public class InventoryItemsController : Controller
             });
         }
 
-        _context.Update(item);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Update(item);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException pg && pg.SqlState == "23505")
+        {
+            ModelState.AddModelError(nameof(item.InventoryNumber),
+                $"Inventory number {item.InventoryNumber} is already in use. Please choose a different number.");
+            PopulateDropdowns(item);
+            return View(item);
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
@@ -113,6 +169,15 @@ public class InventoryItemsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // Returns false if the responsible person belongs to a different department than the room
+    private async Task<bool> DepartmentsMatch(int roomId, int personId)
+    {
+        var room = await _context.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == roomId);
+        var person = await _context.ResponsiblePersons.AsNoTracking().FirstOrDefaultAsync(p => p.Id == personId);
+        if (room == null || person == null) return true; // let other validators handle missing refs
+        return room.DepartmentId == person.DepartmentId;
+    }
+
     private void PopulateDropdowns(InventoryItem? item = null)
     {
         ViewBag.ResponsiblePersonId = new SelectList(
@@ -126,5 +191,15 @@ public class InventoryItemsController : Controller
         ViewBag.VendorId = new SelectList(
             _context.Vendors.OrderBy(v => v.Name), "Id", "Name", item?.VendorId);
         ViewBag.Statuses = new SelectList(Statuses, item?.Status);
+        ViewBag.Currencies = new SelectList(Currencies, item?.Currency ?? "UAH");
+
+        // JSON maps for client-side department filtering (camelCase for JS)
+        var camel = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        ViewBag.RoomDeptMapJson = JsonSerializer.Serialize(
+            _context.Rooms.Select(r => new { r.Id, r.DepartmentId }).ToList()
+                .ToDictionary(r => r.Id, r => r.DepartmentId), camel);
+        ViewBag.PersonsJson = JsonSerializer.Serialize(
+            _context.ResponsiblePersons.OrderBy(p => p.FullName)
+                .Select(p => new { p.Id, p.FullName, p.DepartmentId }).ToList(), camel);
     }
 }

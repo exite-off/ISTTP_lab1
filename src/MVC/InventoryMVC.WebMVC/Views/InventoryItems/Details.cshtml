@@ -11,7 +11,7 @@
         <dl class="row">
             <dt class="col-sm-5">Category</dt><dd class="col-sm-7">@Model.Category?.Name</dd>
             <dt class="col-sm-5">Vendor</dt><dd class="col-sm-7">@Model.Vendor?.Name</dd>
-            <dt class="col-sm-5">Price</dt><dd class="col-sm-7">@Model.Price.ToString("C")</dd>
+            <dt class="col-sm-5">Price</dt><dd class="col-sm-7">@Model.Price.ToString("N2") @Model.Currency</dd>
             <dt class="col-sm-5">Entry Date</dt><dd class="col-sm-7">@Model.EntryDate.ToShortDateString()</dd>
             <dt class="col-sm-5">Warranty Ends</dt><dd class="col-sm-7">@(Model.WarrantyEndDate?.ToShortDateString() ?? "—")</dd>
         </dl>

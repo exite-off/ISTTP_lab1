@@ -13,6 +13,8 @@ public class Vendor : Entity, IAggregateRoot
 
     [Required(ErrorMessage = "Contact phone is required")]
     [StringLength(20)]
+    [RegularExpression(@"^\+?[\d\s\-\(\)]{7,20}$",
+        ErrorMessage = "Enter a valid phone number (digits, spaces, hyphens, parentheses; optional '+' prefix).")]
     [Display(Name = "Contact Phone")]
     public string ContactPhone { get; set; } = string.Empty;
 

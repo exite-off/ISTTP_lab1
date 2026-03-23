@@ -15,6 +15,8 @@ public class Department : Entity, IAggregateRoot
 
     [Required(ErrorMessage = "Phone is required")]
     [StringLength(20)]
+    [RegularExpression(@"^\+?[\d\s\-\(\)]{7,20}$",
+        ErrorMessage = "Enter a valid phone number (digits, spaces, hyphens, parentheses; optional '+' prefix).")]
     [Display(Name = "Phone")]
     public string Phone { get; set; } = string.Empty;
 

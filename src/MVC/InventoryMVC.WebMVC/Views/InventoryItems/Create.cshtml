@@ -4,7 +4,6 @@
 <h2>New Inventory Item</h2>
 <div class="col-md-6">
     <form asp-action="Create">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
         <div class="row mb-3">
             <div class="col">
                 <label asp-for="InventoryNumber" class="form-label"></label>
@@ -16,6 +15,7 @@
                 <select asp-for="Status" asp-items="ViewBag.Statuses" class="form-select">
                     <option value="">-- Select --</option>
                 </select>
+                <span asp-validation-for="Status" class="text-danger"></span>
             </div>
         </div>
         <div class="mb-3">
@@ -33,36 +33,94 @@
                 <input asp-for="WarrantyEndDate" class="form-control" />
             </div>
         </div>
-        <div class="mb-3">
-            <label asp-for="Price" class="form-label"></label>
-            <input asp-for="Price" class="form-control" />
-            <span asp-validation-for="Price" class="text-danger"></span>
+        <div class="row mb-3">
+            <div class="col-8">
+                <label asp-for="Price" class="form-label"></label>
+                <input asp-for="Price" class="form-control" />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+            <div class="col-4">
+                <label asp-for="Currency" class="form-label"></label>
+                <select asp-for="Currency" asp-items="ViewBag.Currencies" class="form-select"></select>
+            </div>
         </div>
         <div class="mb-3">
             <label asp-for="CategoryId" class="form-label"></label>
             <select asp-for="CategoryId" asp-items="ViewBag.CategoryId" class="form-select">
                 <option value="">-- Select Category --</option>
             </select>
+            <span asp-validation-for="CategoryId" class="text-danger"></span>
         </div>
         <div class="mb-3">
             <label asp-for="VendorId" class="form-label"></label>
             <select asp-for="VendorId" asp-items="ViewBag.VendorId" class="form-select">
                 <option value="">-- Select Vendor --</option>
             </select>
+            <span asp-validation-for="VendorId" class="text-danger"></span>
         </div>
         <div class="mb-3">
             <label asp-for="RoomId" class="form-label"></label>
-            <select asp-for="RoomId" asp-items="ViewBag.RoomId" class="form-select">
+            <select id="RoomId" asp-for="RoomId" asp-items="ViewBag.RoomId" class="form-select"
+                    onchange="filterPersonsByRoom()">
                 <option value="">-- Select Room --</option>
             </select>
+            <span asp-validation-for="RoomId" class="text-danger"></span>
         </div>
         <div class="mb-3">
             <label asp-for="ResponsiblePersonId" class="form-label"></label>
-            <select asp-for="ResponsiblePersonId" asp-items="ViewBag.ResponsiblePersonId" class="form-select">
-                <option value="">-- Select Person --</option>
+            <select id="ResponsiblePersonId" asp-for="ResponsiblePersonId" class="form-select">
+                <option value="">-- Select Room first --</option>
             </select>
+            <span asp-validation-for="ResponsiblePersonId" class="text-danger"></span>
+            <div id="noPeopleWarning" class="text-warning small mt-1" style="display:none">
+                No responsible persons found for this department.
+            </div>
         </div>
         <button type="submit" class="btn btn-primary">Save</button>
         <a asp-action="Index" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+
+<script>
+const roomDeptMap = @Html.Raw(ViewBag.RoomDeptMapJson);
+const allPersons  = @Html.Raw(ViewBag.PersonsJson);
+
+function filterPersonsByRoom() {
+    const roomId = parseInt(document.getElementById('RoomId').value);
+    const personSel = document.getElementById('ResponsiblePersonId');
+    const warning = document.getElementById('noPeopleWarning');
+    const currentVal = personSel.value;
+
+    personSel.innerHTML = '';
+
+    if (!roomId || !roomDeptMap[roomId]) {
+        personSel.innerHTML = '<option value="">-- Select Room first --</option>';
+        warning.style.display = 'none';
+        return;
+    }
+
+    const deptId = roomDeptMap[roomId];
+    const filtered = allPersons.filter(p => p.departmentId === deptId);
+
+    if (filtered.length === 0) {
+        personSel.innerHTML = '<option value="">-- No persons in this department --</option>';
+        warning.style.display = '';
+    } else {
+        personSel.innerHTML = '<option value="">-- Select Person --</option>';
+        filtered.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.fullName;
+            if (p.id == currentVal) opt.selected = true;
+            personSel.appendChild(opt);
+        });
+        warning.style.display = 'none';
+    }
+}
+
+// Run on load so the person list reflects any pre-selected room (e.g. after validation failure)
+document.addEventListener('DOMContentLoaded', function () {
+    const roomId = parseInt(document.getElementById('RoomId').value);
+    if (roomId) filterPersonsByRoom();
+});
+</script>

@@ -6,6 +6,7 @@ namespace InventoryMVC.Domain.Entities;
 public class InventoryItem : Entity, IAggregateRoot
 {
     [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "Inventory number must be a positive integer.")]
     [Display(Name = "Inventory #")]
     public int InventoryNumber { get; set; }
 
@@ -26,6 +27,11 @@ public class InventoryItem : Entity, IAggregateRoot
     [Range(0, double.MaxValue, ErrorMessage = "Price must be non-negative")]
     [DataType(DataType.Currency)]
     public decimal Price { get; set; }
+
+    [Required]
+    [StringLength(10)]
+    [Display(Name = "Currency")]
+    public string Currency { get; set; } = "UAH";
 
     // e.g. Active, WrittenOff, UnderRepair
     [Required]
