@@ -28,6 +28,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
+app.MapControllers(); // attribute-routed API controllers
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

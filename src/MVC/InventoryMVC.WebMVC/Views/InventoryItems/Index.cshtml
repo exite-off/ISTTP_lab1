@@ -33,3 +33,66 @@
         }
     </tbody>
 </table>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <p class="fw-semibold mb-1">Items by Category</p>
+        <div id="chartByCategory"></div>
+    </div>
+    <div class="col-md-6">
+        <p class="fw-semibold mb-1">Items by Status</p>
+        <div id="chartByStatus"></div>
+    </div>
+</div>
+
+@section Scripts {
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function drawCharts() {
+        drawCategoryChart();
+        drawStatusChart();
+    }
+
+    function drawCategoryChart() {
+        fetch('/api/charts/countByCategory')
+            .then(r => r.json())
+            .then(data => {
+                const table = new google.visualization.DataTable();
+                table.addColumn('string', 'Category');
+                table.addColumn('number', 'Items');
+                data.forEach(item => table.addRow([item.category, item.count]));
+
+                const chart = new google.visualization.PieChart(
+                    document.getElementById('chartByCategory'));
+                chart.draw(table, {
+                    width: '100%', height: 320,
+                    legend: { position: 'right' },
+                    chartArea: { width: '65%', height: '80%' }
+                });
+            });
+    }
+
+    function drawStatusChart() {
+        fetch('/api/charts/countByStatus')
+            .then(r => r.json())
+            .then(data => {
+                const table = new google.visualization.DataTable();
+                table.addColumn('string', 'Status');
+                table.addColumn('number', 'Items');
+                data.forEach(item => table.addRow([item.status, item.count]));
+
+                const chart = new google.visualization.ColumnChart(
+                    document.getElementById('chartByStatus'));
+                chart.draw(table, {
+                    width: '100%', height: 320,
+                    legend: { position: 'none' },
+                    chartArea: { width: '75%', height: '70%' },
+                    vAxis: { minValue: 0, format: '0' }
+                });
+            });
+    }
+</script>
+}
