@@ -11,8 +11,14 @@ public class VendorsController : Controller
 
     public VendorsController(InventoryContext context) => _context = context;
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.Vendors.ToListAsync());
+    public async Task<IActionResult> Index(string? q)
+    {
+        ViewBag.Q = q;
+        var query = _context.Vendors.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(v => v.Name.ToLower().Contains(q.Trim().ToLower()));
+        return View(await query.OrderBy(v => v.Name).ToListAsync());
+    }
 
     public async Task<IActionResult> Details(int? id)
     {

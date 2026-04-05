@@ -1,5 +1,6 @@
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,11 +10,33 @@ namespace InventoryMVC.WebMVC.Controllers;
 public class ResponsiblePersonsController : Controller
 {
     private readonly InventoryContext _context;
+    private readonly IDataPortServiceFactory<ResponsiblePerson> _dataPortFactory;
 
-    public ResponsiblePersonsController(InventoryContext context) => _context = context;
+    public ResponsiblePersonsController(
+        InventoryContext context,
+        IDataPortServiceFactory<ResponsiblePerson> dataPortFactory)
+    {
+        _context = context;
+        _dataPortFactory = dataPortFactory;
+    }
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.ResponsiblePersons.Include(rp => rp.Department).ToListAsync());
+    public async Task<IActionResult> Index(string? q, int? departmentId, string? groupBy)
+    {
+        var query = _context.ResponsiblePersons.Include(rp => rp.Department).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(p => p.FullName.ToLower().Contains(q.Trim().ToLower()));
+        if (departmentId.HasValue)
+            query = query.Where(p => p.DepartmentId == departmentId.Value);
+
+        ViewBag.Q            = q;
+        ViewBag.DepartmentId = departmentId;
+        ViewBag.GroupBy      = groupBy;
+        ViewBag.DepartmentList = new SelectList(
+            await _context.Departments.OrderBy(d => d.Name).ToListAsync(), "Id", "Name", departmentId);
+
+        return View(await query.OrderBy(p => p.FullName).ToListAsync());
+    }
 
     public async Task<IActionResult> Details(int? id)
     {
@@ -83,6 +106,59 @@ public class ResponsiblePersonsController : Controller
         if (p != null) _context.ResponsiblePersons.Remove(p);
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── Import / Export ───────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult Import() => View();
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(
+        IFormFile personsFile, CancellationToken cancellationToken)
+    {
+        if (personsFile == null || personsFile.Length == 0)
+        {
+            ModelState.AddModelError("", "Please select a file.");
+            return View();
+        }
+
+        try
+        {
+            var importService = _dataPortFactory.GetImportService(personsFile.ContentType);
+            using var stream = personsFile.OpenReadStream();
+            await importService.ImportFromStreamAsync(stream, cancellationToken);
+        }
+        catch (ImportException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+        catch (NotSupportedException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Export(
+        [FromQuery] string contentType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        CancellationToken cancellationToken = default)
+    {
+        var exportService = _dataPortFactory.GetExportService(contentType);
+        var memoryStream = new MemoryStream();
+        await exportService.WriteToAsync(memoryStream, cancellationToken);
+        await memoryStream.FlushAsync(cancellationToken);
+        memoryStream.Position = 0;
+
+        return new FileStreamResult(memoryStream, contentType)
+        {
+            FileDownloadName = $"responsible_persons_{DateTime.UtcNow:yyyy-MM-dd}.xlsx"
+        };
     }
 
     private void PopulateDepartments(int? selected = null) =>

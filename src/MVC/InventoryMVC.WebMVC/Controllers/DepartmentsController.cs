@@ -11,8 +11,14 @@ public class DepartmentsController : Controller
 
     public DepartmentsController(InventoryContext context) => _context = context;
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.Departments.ToListAsync());
+    public async Task<IActionResult> Index(string? q)
+    {
+        ViewBag.Q = q;
+        var query = _context.Departments.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(d => d.Name.ToLower().Contains(q.Trim().ToLower()));
+        return View(await query.OrderBy(d => d.Name).ToListAsync());
+    }
 
     public async Task<IActionResult> Details(int? id)
     {

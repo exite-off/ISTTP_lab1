@@ -1,29 +1,84 @@
 @model IEnumerable<ResponsiblePerson>
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{ ViewData["Title"] = "Responsible Persons"; }
+
+@{
+    var groupByOptions = new SelectList(new[] {
+        new { Value = "department", Text = "Department" }
+    }, "Value", "Text", ViewBag.GroupBy as string);
+}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Responsible Persons</h2>
-    <a asp-action="Create" class="btn btn-dark">+ Person</a>
+    <div class="d-flex gap-2">
+        <a asp-action="Import" class="btn btn-outline-secondary">Import from Excel</a>
+        <a asp-action="Export" class="btn btn-outline-secondary">Export to Excel</a>
+        <a asp-action="Create" class="btn btn-dark">+ Person</a>
+    </div>
 </div>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Search by name</label>
+        <input type="search" name="q" value="@(ViewBag.Q ?? "")"
+               class="form-control form-control-sm" placeholder="Full name..." />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Department</label>
+        <select name="departmentId" asp-items="ViewBag.DepartmentList" class="form-select form-select-sm">
+            <option value="">— All —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Group by</label>
+        <select name="groupBy" asp-items="groupByOptions" class="form-select form-select-sm">
+            <option value="">— No grouping —</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+@{
+    var gb = ViewBag.GroupBy as string;
+    var groups = gb == "department"
+        ? Model.GroupBy(p => p.Department?.Name ?? "Unknown").OrderBy(g => g.Key)
+        : Model.GroupBy(p => string.Empty);
+}
 
 <table class="table table-hover">
     <thead class="table-light">
         <tr><th>Full Name</th><th>Position</th><th>Email</th><th>Department</th><th></th></tr>
     </thead>
     <tbody>
-        @foreach (var p in Model)
+        @foreach (var group in groups)
         {
-            <tr>
-                <td>@p.FullName</td>
-                <td>@p.Position</td>
-                <td>@p.Email</td>
-                <td>@p.Department?.Name</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-outline-info">Details</a>
-                    <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@p.Id" class="btn btn-sm btn-outline-danger">Delete</a>
-                </td>
-            </tr>
+            if (!string.IsNullOrEmpty(group.Key))
+            {
+                <tr class="table-secondary">
+                    <td colspan="5" class="fw-semibold">
+                        @group.Key
+                        <span class="badge bg-secondary ms-2">@group.Count()</span>
+                    </td>
+                </tr>
+            }
+            @foreach (var p in group)
+            {
+                <tr>
+                    <td>@p.FullName</td>
+                    <td>@p.Position</td>
+                    <td>@p.Email</td>
+                    <td>@p.Department?.Name</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-outline-info">Details</a>
+                        <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@p.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+            }
         }
     </tbody>
 </table>
+@if (!Model.Any()) { <p class="text-muted">No persons found.</p> }

@@ -1,0 +1,26 @@
+@{ ViewData["Title"] = "Import Responsible Persons"; }
+
+<h2>Import Responsible Persons from Excel</h2>
+
+<div class="col-md-6">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"
+         style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+    <div class="alert alert-info small mb-4">
+        <strong>Expected columns (row 1 = header, row 2+ = data):</strong><br>
+        Full Name &nbsp;|&nbsp; Position &nbsp;|&nbsp; Email &nbsp;|&nbsp; Department
+        <br><br>
+        The department must already exist in the database.
+        Persons with a matching email address will be skipped.
+    </div>
+
+    <form asp-action="Import" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Select Excel file (.xlsx)</label>
+            <input type="file" name="personsFile" accept=".xlsx" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-dark">Import</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

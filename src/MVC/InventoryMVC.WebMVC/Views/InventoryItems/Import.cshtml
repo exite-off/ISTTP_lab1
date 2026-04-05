@@ -1,0 +1,28 @@
+@{ ViewData["Title"] = "Import Items"; }
+
+<h2>Import Inventory Items from Excel</h2>
+
+<div class="col-md-6">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+    <div class="alert alert-info small mb-4">
+        <strong>Expected columns (row 1 = header, row 2+ = data):</strong><br>
+        Inventory # &nbsp;|&nbsp; Name &nbsp;|&nbsp; Entry Date (yyyy-MM-dd) &nbsp;|&nbsp;
+        Warranty End (yyyy-MM-dd) &nbsp;|&nbsp; Price &nbsp;|&nbsp; Currency &nbsp;|&nbsp;
+        Status &nbsp;|&nbsp; Category &nbsp;|&nbsp; Vendor &nbsp;|&nbsp;
+        Department &nbsp;|&nbsp; Room # &nbsp;|&nbsp; Responsible Person
+        <br><br>
+        Departments, rooms and responsible persons must already exist in the database.
+        Categories and vendors will be created automatically if not found.
+    </div>
+
+    <form asp-action="Import" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Select Excel file (.xlsx)</label>
+            <input type="file" name="itemsFile" accept=".xlsx" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-dark">Import</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

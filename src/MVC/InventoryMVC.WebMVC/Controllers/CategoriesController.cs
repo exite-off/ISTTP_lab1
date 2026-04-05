@@ -11,8 +11,14 @@ public class CategoriesController : Controller
 
     public CategoriesController(InventoryContext context) => _context = context;
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.Categories.Include(c => c.InventoryItems).ToListAsync());
+    public async Task<IActionResult> Index(string? q)
+    {
+        ViewBag.Q = q;
+        var query = _context.Categories.Include(c => c.InventoryItems).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(c => c.Name.ToLower().Contains(q.Trim().ToLower()));
+        return View(await query.OrderBy(c => c.Name).ToListAsync());
+    }
 
     public async Task<IActionResult> Details(int? id)
     {

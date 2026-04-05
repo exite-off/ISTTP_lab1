@@ -1,4 +1,6 @@
+using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -8,6 +10,10 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IDataPortServiceFactory<InventoryItem>,
+    InventoryItemDataPortServiceFactory>();
+builder.Services.AddScoped<IDataPortServiceFactory<ResponsiblePerson>,
+    ResponsiblePersonDataPortServiceFactory>();
 
 builder.Services.AddDbContext<InventoryContext>(options =>
     options.UseNpgsql(

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,18 +12,72 @@ namespace InventoryMVC.WebMVC.Controllers;
 public class InventoryItemsController : Controller
 {
     private readonly InventoryContext _context;
+    private readonly IDataPortServiceFactory<InventoryItem> _dataPortFactory;
 
     private static readonly string[] Statuses = ["Active", "Under Repair", "Written Off", "In Storage"];
     private static readonly string[] Currencies = ["UAH", "USD", "EUR", "GBP", "PLN"];
 
-    public InventoryItemsController(InventoryContext context) => _context = context;
+    public InventoryItemsController(
+        InventoryContext context,
+        IDataPortServiceFactory<InventoryItem> dataPortFactory)
+    {
+        _context = context;
+        _dataPortFactory = dataPortFactory;
+    }
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.InventoryItems
+    private const int PageSize = 15;
+
+    public async Task<IActionResult> Index(
+        string? q, string? status, int? categoryId, int? departmentId,
+        string? groupBy, int page = 1)
+    {
+        var query = _context.InventoryItems
             .Include(i => i.Category)
             .Include(i => i.Room).ThenInclude(r => r!.Department)
             .Include(i => i.ResponsiblePerson)
-            .ToListAsync());
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var qTrim = q.Trim();
+            bool isNum = int.TryParse(qTrim, out var invNum);
+            query = query.Where(i =>
+                i.Name.ToLower().Contains(qTrim.ToLower()) ||
+                (isNum && i.InventoryNumber == invNum));
+        }
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(i => i.Status == status);
+        if (categoryId.HasValue)
+            query = query.Where(i => i.CategoryId == categoryId.Value);
+        if (departmentId.HasValue)
+            query = query.Where(i => i.Room!.DepartmentId == departmentId.Value);
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+        page = Math.Clamp(page, 1, Math.Max(1, totalPages));
+
+        ViewBag.Q            = q;
+        ViewBag.Status       = status;
+        ViewBag.CategoryId   = categoryId;
+        ViewBag.DepartmentId = departmentId;
+        ViewBag.GroupBy      = groupBy;
+        ViewBag.CurrentPage  = page;
+        ViewBag.TotalPages   = totalPages;
+        ViewBag.TotalCount   = totalCount;
+        ViewBag.StatusList   = new SelectList(Statuses, status);
+        ViewBag.CategoryList = new SelectList(
+            await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", categoryId);
+        ViewBag.DepartmentList = new SelectList(
+            await _context.Departments.OrderBy(d => d.Name).ToListAsync(), "Id", "Name", departmentId);
+
+        var items = await query
+            .OrderBy(i => i.InventoryNumber)
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
+
+        return View(items);
+    }
 
     public async Task<IActionResult> Details(int? id)
     {
@@ -167,6 +222,59 @@ public class InventoryItemsController : Controller
         if (item != null) _context.InventoryItems.Remove(item);
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── Import / Export ───────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult Import() => View();
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(
+        IFormFile itemsFile, CancellationToken cancellationToken)
+    {
+        if (itemsFile == null || itemsFile.Length == 0)
+        {
+            ModelState.AddModelError("", "Please select a file.");
+            return View();
+        }
+
+        try
+        {
+            var importService = _dataPortFactory.GetImportService(itemsFile.ContentType);
+            using var stream = itemsFile.OpenReadStream();
+            await importService.ImportFromStreamAsync(stream, cancellationToken);
+        }
+        catch (ImportException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+        catch (NotSupportedException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Export(
+        [FromQuery] string contentType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        CancellationToken cancellationToken = default)
+    {
+        var exportService = _dataPortFactory.GetExportService(contentType);
+        var memoryStream = new MemoryStream();
+        await exportService.WriteToAsync(memoryStream, cancellationToken);
+        await memoryStream.FlushAsync(cancellationToken);
+        memoryStream.Position = 0;
+
+        return new FileStreamResult(memoryStream, contentType)
+        {
+            FileDownloadName = $"inventory_{DateTime.UtcNow:yyyy-MM-dd}.xlsx"
+        };
     }
 
     // Returns false if the responsible person belongs to a different department than the room

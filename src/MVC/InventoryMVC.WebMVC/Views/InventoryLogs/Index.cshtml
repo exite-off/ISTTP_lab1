@@ -1,32 +1,96 @@
 @model IEnumerable<InventoryLog>
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{ ViewData["Title"] = "Change Log"; }
+
+@{
+    var groupByOptions = new SelectList(new[] {
+        new { Value = "actionType", Text = "Action type" },
+        new { Value = "date",       Text = "Date" }
+    }, "Value", "Text", ViewBag.GroupBy as string);
+}
 
 <h2>Change Log</h2>
 <p class="text-muted">Automatically updated when a responsible person is reassigned.</p>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Search (item name or notes)</label>
+        <input type="search" name="q" value="@(ViewBag.Q ?? "")"
+               class="form-control form-control-sm" placeholder="..." />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Action type</label>
+        <select name="actionType" asp-items="ViewBag.ActionTypes" class="form-select form-select-sm">
+            <option value="">— All —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">From date</label>
+        <input type="date" name="dateFrom" value="@(ViewBag.DateFrom ?? "")"
+               class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">To date</label>
+        <input type="date" name="dateTo" value="@(ViewBag.DateTo ?? "")"
+               class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Group by</label>
+        <select name="groupBy" asp-items="groupByOptions" class="form-select form-select-sm">
+            <option value="">— No grouping —</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+@{
+    var gb = ViewBag.GroupBy as string;
+    var groups = gb switch {
+        "actionType" => Model.GroupBy(l => l.ActionType).OrderBy(g => g.Key),
+        "date"       => Model.GroupBy(l => l.ActionDate.ToString("yyyy-MM-dd")).OrderByDescending(g => g.Key),
+        _            => Model.GroupBy(l => string.Empty)
+    };
+}
 
 <table class="table table-hover">
     <thead class="table-light">
         <tr><th>Date</th><th>Action</th><th>Item</th><th>Old Responsible</th><th>New Responsible</th><th>Notes</th><th></th></tr>
     </thead>
     <tbody>
-        @foreach (var log in Model)
+        @foreach (var group in groups)
         {
-            <tr>
-                <td>@log.ActionDate.ToString("g")</td>
-                <td><span class="badge bg-secondary">@log.ActionType</span></td>
-                <td>
-                    @if (log.InventoryItem != null)
-                    {
-                        <a asp-controller="InventoryItems" asp-action="Details" asp-route-id="@log.InventoryItemId">
-                            #@log.InventoryItem.InventoryNumber @log.InventoryItem.Name
-                        </a>
-                    }
-                </td>
-                <td>@log.OldResponsiblePerson?.FullName</td>
-                <td>@log.NewResponsiblePerson?.FullName</td>
-                <td>@log.Description</td>
-                <td><a asp-action="Details" asp-route-id="@log.Id" class="btn btn-sm btn-outline-info">Details</a></td>
-            </tr>
+            if (!string.IsNullOrEmpty(group.Key))
+            {
+                <tr class="table-secondary">
+                    <td colspan="7" class="fw-semibold">
+                        @group.Key
+                        <span class="badge bg-secondary ms-2">@group.Count()</span>
+                    </td>
+                </tr>
+            }
+            @foreach (var log in group)
+            {
+                <tr>
+                    <td>@log.ActionDate.ToString("g")</td>
+                    <td><span class="badge bg-secondary">@log.ActionType</span></td>
+                    <td>
+                        @if (log.InventoryItem != null)
+                        {
+                            <a asp-controller="InventoryItems" asp-action="Details" asp-route-id="@log.InventoryItemId">
+                                #@log.InventoryItem.InventoryNumber @log.InventoryItem.Name
+                            </a>
+                        }
+                    </td>
+                    <td>@log.OldResponsiblePerson?.FullName</td>
+                    <td>@log.NewResponsiblePerson?.FullName</td>
+                    <td>@log.Description</td>
+                    <td><a asp-action="Details" asp-route-id="@log.Id" class="btn btn-sm btn-outline-info">Details</a></td>
+                </tr>
+            }
         }
     </tbody>
 </table>
+@if (!Model.Any()) { <p class="text-muted">No log entries found.</p> }

@@ -12,8 +12,28 @@ public class RoomsController : Controller
 
     public RoomsController(InventoryContext context) => _context = context;
 
-    public async Task<IActionResult> Index() =>
-        View(await _context.Rooms.Include(r => r.Department).ToListAsync());
+    public async Task<IActionResult> Index(string? q, int? departmentId, int? floor, string? groupBy)
+    {
+        var query = _context.Rooms.Include(r => r.Department).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q) && int.TryParse(q.Trim(), out var roomNum))
+            query = query.Where(r => r.Number == roomNum);
+        if (departmentId.HasValue)
+            query = query.Where(r => r.DepartmentId == departmentId.Value);
+        if (floor.HasValue)
+            query = query.Where(r => r.Floor == floor.Value);
+
+        ViewBag.Q            = q;
+        ViewBag.DepartmentId = departmentId;
+        ViewBag.Floor        = floor;
+        ViewBag.GroupBy      = groupBy;
+        ViewBag.DepartmentList = new SelectList(
+            await _context.Departments.OrderBy(d => d.Name).ToListAsync(), "Id", "Name", departmentId);
+        ViewBag.FloorList = new SelectList(
+            await _context.Rooms.Select(r => r.Floor).Distinct().OrderBy(f => f).ToListAsync(), floor);
+
+        return View(await query.OrderBy(r => r.Number).ToListAsync());
+    }
 
     public async Task<IActionResult> Details(int? id)
     {

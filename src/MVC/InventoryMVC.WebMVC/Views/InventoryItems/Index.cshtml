@@ -1,10 +1,69 @@
 @model IEnumerable<InventoryItem>
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{ ViewData["Title"] = "Inventory Items"; }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Inventory Items</h2>
-    <a asp-action="Create" class="btn btn-dark">+ Item</a>
+    <div class="d-flex gap-2">
+        <a asp-action="Import" class="btn btn-outline-secondary">Import from Excel</a>
+        <a asp-action="Export" class="btn btn-outline-secondary">Export to Excel</a>
+        <a asp-action="Create" class="btn btn-dark">+ Item</a>
+    </div>
 </div>
+
+@{
+    var groupByOptions = new SelectList(new[] {
+        new { Value = "category",   Text = "Category" },
+        new { Value = "status",     Text = "Status" },
+        new { Value = "department", Text = "Department" }
+    }, "Value", "Text", ViewBag.GroupBy as string);
+}
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Search (name or inv #)</label>
+        <input type="search" name="q" value="@(ViewBag.Q ?? "")"
+               class="form-control form-control-sm" placeholder="Name or number..." />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Status</label>
+        <select name="status" asp-items="ViewBag.StatusList" class="form-select form-select-sm">
+            <option value="">— All —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Category</label>
+        <select name="categoryId" asp-items="ViewBag.CategoryList" class="form-select form-select-sm">
+            <option value="">— All —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Department</label>
+        <select name="departmentId" asp-items="ViewBag.DepartmentList" class="form-select form-select-sm">
+            <option value="">— All —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Group by</label>
+        <select name="groupBy" asp-items="groupByOptions" class="form-select form-select-sm">
+            <option value="">— No grouping —</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+@{
+    var gb = ViewBag.GroupBy as string;
+    var groups = gb switch {
+        "category"   => Model.GroupBy(i => i.Category?.Name ?? "Uncategorized").OrderBy(g => g.Key),
+        "status"     => Model.GroupBy(i => i.Status).OrderBy(g => g.Key),
+        "department" => Model.GroupBy(i => i.Room?.Department?.Name ?? "Unknown").OrderBy(g => g.Key),
+        _            => Model.GroupBy(i => string.Empty)
+    };
+}
 
 <table class="table table-hover">
     <thead class="table-light">
@@ -14,25 +73,94 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model)
+        @foreach (var group in groups)
         {
-            <tr>
-                <td>@item.InventoryNumber</td>
-                <td>@item.Name</td>
-                <td>@item.Category?.Name</td>
-                <td><span class="badge bg-info text-dark">@item.Status</span></td>
-                <td>@item.Room?.Number / @item.Room?.Department?.Name</td>
-                <td>@item.ResponsiblePerson?.FullName</td>
-                <td>@item.Price.ToString("N2") @item.Currency</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Details</a>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
-                </td>
-            </tr>
+            if (!string.IsNullOrEmpty(group.Key))
+            {
+                <tr class="table-secondary">
+                    <td colspan="8" class="fw-semibold">
+                        @group.Key
+                        <span class="badge bg-secondary ms-2">@group.Count()</span>
+                    </td>
+                </tr>
+            }
+            @foreach (var item in group)
+            {
+                <tr>
+                    <td>@item.InventoryNumber</td>
+                    <td>@item.Name</td>
+                    <td>@item.Category?.Name</td>
+                    <td><span class="badge bg-info text-dark">@item.Status</span></td>
+                    <td>@item.Room?.Number / @item.Room?.Department?.Name</td>
+                    <td>@item.ResponsiblePerson?.FullName</td>
+                    <td>@item.Price.ToString("N2") @item.Currency</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Details</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+            }
         }
     </tbody>
 </table>
+@if (!Model.Any()) { <p class="text-muted">No items found.</p> }
+
+@{
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages  = ViewBag.TotalPages;
+    int totalCount  = ViewBag.TotalCount;
+
+    string PageUrl(int p)
+    {
+        var qs = new System.Text.StringBuilder("?page=").Append(p);
+        if (!string.IsNullOrEmpty(ViewBag.Q as string))       qs.Append("&q=").Append(Uri.EscapeDataString(ViewBag.Q));
+        if (!string.IsNullOrEmpty(ViewBag.Status as string))  qs.Append("&status=").Append(Uri.EscapeDataString(ViewBag.Status));
+        if (ViewBag.CategoryId   != null) qs.Append("&categoryId=").Append(ViewBag.CategoryId);
+        if (ViewBag.DepartmentId != null) qs.Append("&departmentId=").Append(ViewBag.DepartmentId);
+        if (!string.IsNullOrEmpty(ViewBag.GroupBy as string)) qs.Append("&groupBy=").Append(Uri.EscapeDataString(ViewBag.GroupBy));
+        return qs.ToString();
+    }
+}
+
+@if (totalPages > 1)
+{
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <small class="text-muted">
+            Showing @((currentPage - 1) * 15 + 1)–@(Math.Min(currentPage * 15, totalCount)) of @totalCount items
+        </small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@PageUrl(currentPage - 1)">‹ Prev</a>
+                </li>
+                @{
+                    int lo = Math.Max(1, currentPage - 2);
+                    int hi = Math.Min(totalPages, currentPage + 2);
+                    if (lo > 1)
+                    {
+                        <li class="page-item"><a class="page-link" href="@PageUrl(1)">1</a></li>
+                        if (lo > 2) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                    }
+                    for (int pg = lo; pg <= hi; pg++)
+                    {
+                        <li class="page-item @(pg == currentPage ? "active" : "")">
+                            <a class="page-link" href="@PageUrl(pg)">@pg</a>
+                        </li>
+                    }
+                    if (hi < totalPages)
+                    {
+                        if (hi < totalPages - 1) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                        <li class="page-item"><a class="page-link" href="@PageUrl(totalPages)">@totalPages</a></li>
+                    }
+                }
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@PageUrl(currentPage + 1)">Next ›</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}
 
 <div class="row mt-4">
     <div class="col-md-6">
@@ -51,48 +179,30 @@
     google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(drawCharts);
 
-    function drawCharts() {
-        drawCategoryChart();
-        drawStatusChart();
-    }
+    function drawCharts() { drawCategoryChart(); drawStatusChart(); }
 
     function drawCategoryChart() {
-        fetch('/api/charts/countByCategory')
-            .then(r => r.json())
-            .then(data => {
-                const table = new google.visualization.DataTable();
-                table.addColumn('string', 'Category');
-                table.addColumn('number', 'Items');
-                data.forEach(item => table.addRow([item.category, item.count]));
-
-                const chart = new google.visualization.PieChart(
-                    document.getElementById('chartByCategory'));
-                chart.draw(table, {
-                    width: '100%', height: 320,
-                    legend: { position: 'right' },
-                    chartArea: { width: '65%', height: '80%' }
-                });
-            });
+        fetch('/api/charts/countByCategory').then(r => r.json()).then(data => {
+            const table = new google.visualization.DataTable();
+            table.addColumn('string', 'Category');
+            table.addColumn('number', 'Items');
+            data.forEach(item => table.addRow([item.category, item.count]));
+            new google.visualization.PieChart(document.getElementById('chartByCategory'))
+                .draw(table, { width: '100%', height: 320,
+                    legend: { position: 'right' }, chartArea: { width: '65%', height: '80%' } });
+        });
     }
 
     function drawStatusChart() {
-        fetch('/api/charts/countByStatus')
-            .then(r => r.json())
-            .then(data => {
-                const table = new google.visualization.DataTable();
-                table.addColumn('string', 'Status');
-                table.addColumn('number', 'Items');
-                data.forEach(item => table.addRow([item.status, item.count]));
-
-                const chart = new google.visualization.ColumnChart(
-                    document.getElementById('chartByStatus'));
-                chart.draw(table, {
-                    width: '100%', height: 320,
-                    legend: { position: 'none' },
-                    chartArea: { width: '75%', height: '70%' },
-                    vAxis: { minValue: 0, format: '0' }
-                });
-            });
+        fetch('/api/charts/countByStatus').then(r => r.json()).then(data => {
+            const table = new google.visualization.DataTable();
+            table.addColumn('string', 'Status');
+            table.addColumn('number', 'Items');
+            data.forEach(item => table.addRow([item.status, item.count]));
+            new google.visualization.ColumnChart(document.getElementById('chartByStatus'))
+                .draw(table, { width: '100%', height: 320, legend: { position: 'none' },
+                    chartArea: { width: '75%', height: '70%' }, vAxis: { minValue: 0, format: '0' } });
+        });
     }
 </script>
 }

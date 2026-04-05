@@ -6,6 +6,18 @@
     <a asp-action="Create" class="btn btn-dark">+ Vendor</a>
 </div>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Search by name</label>
+        <input type="search" name="q" value="@(ViewBag.Q ?? "")"
+               class="form-control form-control-sm" placeholder="Vendor name..." />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
 <table class="table table-hover">
     <thead class="table-light">
         <tr><th>Name</th><th>Contact Phone</th><th>Email</th><th>Address</th><th></th></tr>
@@ -27,3 +39,4 @@
         }
     </tbody>
 </table>
+@if (!Model.Any()) { <p class="text-muted">No vendors found.</p> }
