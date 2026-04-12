@@ -1,11 +1,14 @@
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
+[Authorize]
 public class RoomsController : Controller
 {
     private readonly InventoryContext _context;
@@ -45,6 +48,7 @@ public class RoomsController : Controller
         return room == null ? NotFound() : View(room);
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Create()
     {
         PopulateDepartments();
@@ -52,6 +56,7 @@ public class RoomsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([Bind("Number,Floor,DepartmentId")] Room room)
     {
         if (!ModelState.IsValid) { PopulateDepartments(); return View(room); }
@@ -60,6 +65,7 @@ public class RoomsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null) return NotFound();
@@ -70,6 +76,7 @@ public class RoomsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int id, [Bind("Id,Number,Floor,DepartmentId")] Room room)
     {
         if (id != room.Id) return NotFound();
@@ -79,6 +86,7 @@ public class RoomsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null) return NotFound();
@@ -87,6 +95,7 @@ public class RoomsController : Controller
     }
 
     [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var room = await _context.Rooms.FindAsync(id);

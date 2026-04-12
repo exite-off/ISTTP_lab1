@@ -1,10 +1,13 @@
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
+[Authorize]
 public class DepartmentsController : Controller
 {
     private readonly InventoryContext _context;
@@ -30,9 +33,11 @@ public class DepartmentsController : Controller
         return dept == null ? NotFound() : View(dept);
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Create() => View();
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([Bind("Name,Address,Phone")] Department department)
     {
         if (!ModelState.IsValid) return View(department);
@@ -41,6 +46,7 @@ public class DepartmentsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null) return NotFound();
@@ -49,6 +55,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Address,Phone")] Department department)
     {
         if (id != department.Id) return NotFound();
@@ -58,6 +65,7 @@ public class DepartmentsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null) return NotFound();
@@ -66,6 +74,7 @@ public class DepartmentsController : Controller
     }
 
     [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var dept = await _context.Departments.FindAsync(id);

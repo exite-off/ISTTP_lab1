@@ -1,10 +1,12 @@
 using InventoryMVC.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
 // Read-only — logs are created automatically when items change
+[Authorize]
 public class InventoryLogsController : Controller
 {
     private readonly InventoryContext _context;

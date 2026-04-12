@@ -1,0 +1,41 @@
+@using Microsoft.AspNetCore.Identity
+@using InventoryMVC.WebMVC.Data.Identity
+@using InventoryMVC.WebMVC.Extensions
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    var username = UserManager.GetUserName(User)!;
+    var isAdmin  = User.IsInRole(RoleNames.Admin);
+
+    <div class="d-flex align-items-center gap-2 ms-3">
+        <span class="nav-link text-muted small">
+            @username
+            <span class="badge @(isAdmin ? "bg-danger" : "bg-secondary") ms-1" style="font-size:0.65rem">
+                @(isAdmin ? RoleNames.Admin : RoleNames.Monitor)
+            </span>
+        </span>
+        <form asp-area="Identity" asp-page="/Account/Logout"
+              asp-route-returnUrl="@Url.Action("Index", "Home")" method="post" class="m-0">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    style="font-size:0.75rem; color:#9aafc4; border-color:#3a4f66;">
+                Log out
+            </button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-2 ms-3">
+        <a asp-area="Identity" asp-page="/Account/Login"
+           class="btn btn-sm btn-outline-secondary"
+           style="font-size:0.75rem; color:#9aafc4; border-color:#3a4f66;">
+            Log in
+        </a>
+        <a asp-area="Identity" asp-page="/Account/Register"
+           class="btn btn-sm btn-dark" style="font-size:0.75rem;">
+            Register
+        </a>
+    </div>
+}

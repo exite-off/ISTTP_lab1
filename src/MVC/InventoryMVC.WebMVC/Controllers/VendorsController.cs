@@ -1,10 +1,13 @@
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
+[Authorize]
 public class VendorsController : Controller
 {
     private readonly InventoryContext _context;
@@ -29,9 +32,11 @@ public class VendorsController : Controller
         return vendor == null ? NotFound() : View(vendor);
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Create() => View();
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([Bind("Name,Address,ContactPhone,Email")] Vendor vendor)
     {
         if (!ModelState.IsValid) return View(vendor);
@@ -40,6 +45,7 @@ public class VendorsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null) return NotFound();
@@ -48,6 +54,7 @@ public class VendorsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Address,ContactPhone,Email")] Vendor vendor)
     {
         if (id != vendor.Id) return NotFound();
@@ -57,6 +64,7 @@ public class VendorsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null) return NotFound();
@@ -65,6 +73,7 @@ public class VendorsController : Controller
     }
 
     [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var vendor = await _context.Vendors.FindAsync(id);

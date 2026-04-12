@@ -1,12 +1,15 @@
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Extensions;
 using InventoryMVC.WebMVC.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
+[Authorize]
 public class ResponsiblePersonsController : Controller
 {
     private readonly InventoryContext _context;
@@ -48,6 +51,7 @@ public class ResponsiblePersonsController : Controller
         return person == null ? NotFound() : View(person);
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Create()
     {
         PopulateDepartments();
@@ -55,6 +59,7 @@ public class ResponsiblePersonsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([Bind("FullName,Position,Email,DepartmentId")] ResponsiblePerson person)
     {
         if (!ModelState.IsValid) { PopulateDepartments(); return View(person); }
@@ -63,6 +68,7 @@ public class ResponsiblePersonsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null) return NotFound();
@@ -73,6 +79,7 @@ public class ResponsiblePersonsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int id, [Bind("Id,FullName,Position,Email,DepartmentId")] ResponsiblePerson person)
     {
         if (id != person.Id) return NotFound();
@@ -82,6 +89,7 @@ public class ResponsiblePersonsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null) return NotFound();
@@ -92,6 +100,7 @@ public class ResponsiblePersonsController : Controller
     }
 
     [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         // Check for assigned items before deletion
@@ -111,9 +120,11 @@ public class ResponsiblePersonsController : Controller
     // ── Import / Export ───────────────────────────────────────────────────────
 
     [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Import() => View();
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Import(
         IFormFile personsFile, CancellationToken cancellationToken)
     {
@@ -144,6 +155,7 @@ public class ResponsiblePersonsController : Controller
     }
 
     [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Export(
         [FromQuery] string contentType =
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -111,28 +111,32 @@
             </button>
             <div class="collapse navbar-collapse" id="nav">
                 <ul class="navbar-nav ms-auto gap-1">
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="InventoryItems" asp-action="Index">Items</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Departments" asp-action="Index">Departments</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="ResponsiblePersons" asp-action="Index">Persons</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Categories" asp-action="Index">Categories</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Vendors" asp-action="Index">Vendors</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Rooms" asp-action="Index">Rooms</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="InventoryLogs" asp-action="Index">Change Log</a>
-                    </li>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="InventoryItems" asp-action="Index">Items</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Departments" asp-action="Index">Departments</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="ResponsiblePersons" asp-action="Index">Persons</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Categories" asp-action="Index">Categories</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Vendors" asp-action="Index">Vendors</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Rooms" asp-action="Index">Rooms</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="InventoryLogs" asp-action="Index">Change Log</a>
+                        </li>
+                    }
                 </ul>
+                <partial name="_LoginPartial" />
             </div>
         </div>
     </nav>

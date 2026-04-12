@@ -3,7 +3,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Vendors</h2>
-    <a asp-action="Create" class="btn btn-dark">+ Vendor</a>
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="Create" class="btn btn-dark">+ Vendor</a>
+    }
 </div>
 
 <form method="get" class="row g-2 align-items-end mb-3">
@@ -32,8 +35,11 @@
                 <td>@v.Address</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@v.Id" class="btn btn-sm btn-outline-info">Details</a>
-                    <a asp-action="Edit" asp-route-id="@v.Id" class="btn btn-sm btn-outline-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@v.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@v.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@v.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    }
                 </td>
             </tr>
         }

@@ -1,7 +1,9 @@
 using System.Text.Json;
 using InventoryMVC.Domain.Entities;
 using InventoryMVC.Infrastructure;
+using InventoryMVC.WebMVC.Extensions;
 using InventoryMVC.WebMVC.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +11,7 @@ using Npgsql;
 
 namespace InventoryMVC.WebMVC.Controllers;
 
+[Authorize]
 public class InventoryItemsController : Controller
 {
     private readonly InventoryContext _context;
@@ -95,6 +98,7 @@ public class InventoryItemsController : Controller
         return item == null ? NotFound() : View(item);
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Create()
     {
         PopulateDropdowns();
@@ -102,6 +106,7 @@ public class InventoryItemsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create(
         [Bind("InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Currency,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
         InventoryItem item)
@@ -145,6 +150,7 @@ public class InventoryItemsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null) return NotFound();
@@ -155,6 +161,7 @@ public class InventoryItemsController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Edit(int id,
         [Bind("Id,InventoryNumber,Name,EntryDate,WarrantyEndDate,Price,Currency,Status,ResponsiblePersonId,CategoryId,RoomId,VendorId")]
         InventoryItem item)
@@ -204,6 +211,7 @@ public class InventoryItemsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null) return NotFound();
@@ -216,6 +224,7 @@ public class InventoryItemsController : Controller
     }
 
     [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var item = await _context.InventoryItems.FindAsync(id);
@@ -227,9 +236,11 @@ public class InventoryItemsController : Controller
     // ── Import / Export ───────────────────────────────────────────────────────
 
     [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
     public IActionResult Import() => View();
 
     [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Import(
         IFormFile itemsFile, CancellationToken cancellationToken)
     {
@@ -260,6 +271,7 @@ public class InventoryItemsController : Controller
     }
 
     [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Export(
         [FromQuery] string contentType =
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
